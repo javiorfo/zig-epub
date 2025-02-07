@@ -1,2 +1,2 @@
 # zig-epub
-*Zig library for creating EPUB files*
+*Minimal Zig library for creating EPUB files*

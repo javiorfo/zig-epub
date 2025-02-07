@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='utf-8'?>
+<package xmlns="http://www.idpf.org/2007/opf"
+         xmlns:dc="http://purl.org/dc/elements/1.1/"
+         unique-identifier="bookid" version="2.0">
+  <metadata>
+    <dc:title>{{title}}</dc:title>
+    <dc:creator>{{creator}}</dc:creator>
+    <dc:identifier id="bookid">urn:uuid:0cc33cbd-94e2-49c1-909a-72ae16bc2658</dc:identifier>
+    <dc:identifier id="isbn">978-1-234-56789-0</dc:identifier>
+    <dc:language>{{lang}}</dc:language>
+    <meta name="cover" content="cover-image" />
+    <dc:date>{{date}}</dc:date>
+    <dc:publisher>{{publisher}}</dc:publisher>
+  </metadata>
+  <manifest>
+    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
+    <item id="cover" href="title.html" media-type="application/xhtml+xml"/>
+    <item id="content" href="content.html" media-type="application/xhtml+xml"/>
+    <item id="content2" href="content2.html" media-type="application/xhtml+xml"/>
+    <item id="cover-image" href="images/cover.jpg" media-type="image/jpg"/>
+    <item id="css" href="stylesheet.css" media-type="text/css"/>
+  </manifest>
+  <spine toc="ncx">
+    <itemref idref="cover" linear="no"/>
+    <itemref idref="content"/>
+    <itemref idref="content2"/>
+  </spine>
+  <guide>
+    <reference href="title.html" type="cover" title="Cover"/>
+  </guide>
+</package>

@@ -2,27 +2,27 @@ const std = @import("std");
 const Body = @import("body.zig").Body;
 const testing = std.testing;
 
-name: []const u8,
 body: Body,
 allocator: std.mem.Allocator,
 
-const Section = @This();
+const Stylesheet = @This();
 
-pub fn create(allocator: std.mem.Allocator, name: []const u8, body: Body) Section {
+const name = "stylesheet.css";
+
+pub fn create(allocator: std.mem.Allocator, body: Body) Stylesheet {
     return .{
         .allocator = allocator,
-        .name = name,
         .body = body,
     };
 }
 
-pub fn generate(self: Section) !void {
+pub fn generate(self: Stylesheet) !void {
     const value = try self.body.get(self.allocator);
     defer if (self.body.isFile()) self.allocator.free(value);
     // TODO Create file
 }
 
-test "section raw" {
+test "stylesheet raw" {
     const alloc = testing.allocator;
 
     const raw =
@@ -30,12 +30,12 @@ test "section raw" {
         \\ <p>Something</p>
     ;
 
-    var section = Section.create(alloc, "chapter1", .{ .raw = raw });
+    var section = Stylesheet.create(alloc, .{ .raw = raw });
     try section.generate();
     try testing.expectEqualStrings(raw, try section.body.get(alloc));
 }
 
-test "section file" {
+test "stylesheet file" {
     const alloc = testing.allocator;
 
     const cwd_path = try std.fs.cwd().realpathAlloc(alloc, ".");
@@ -43,15 +43,15 @@ test "section file" {
     const absolute_path = try std.fs.path.resolve(alloc, &.{ cwd_path, "README.md" });
     defer alloc.free(absolute_path);
 
-    var section = Section.create(alloc, "chapter2", .{ .file_path = absolute_path });
+    var section = Stylesheet.create(alloc, .{ .file_path = absolute_path });
     const value = try section.body.get(alloc);
     defer alloc.free(value);
     try section.generate();
     try testing.expectEqualStrings("zig-epub", value[2..10]);
 }
 
-test "section file error" {
+test "stylesheet file error" {
     const alloc = testing.allocator;
-    var section = Section.create(alloc, "chapter3", .{ .file_path = "/no_existent" });
+    var section = Stylesheet.create(alloc, .{ .file_path = "/no_existent.css" });
     try testing.expectError(error.FileNotFound, section.body.get(alloc));
 }

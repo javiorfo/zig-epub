@@ -2,27 +2,29 @@ const std = @import("std");
 const Body = @import("body.zig").Body;
 const testing = std.testing;
 
-name: []const u8,
-body: Body,
 allocator: std.mem.Allocator,
+body: Body,
+image: ?[]const u8,
 
-const Section = @This();
+const Cover = @This();
 
-pub fn create(allocator: std.mem.Allocator, name: []const u8, body: Body) Section {
+const name = "cover.xhtml";
+
+pub fn create(allocator: std.mem.Allocator, body: Body, image: ?[]const u8) Cover {
     return .{
         .allocator = allocator,
-        .name = name,
         .body = body,
+        .image = image,
     };
 }
 
-pub fn generate(self: Section) !void {
+pub fn generate(self: Cover) !void {
     const value = try self.body.get(self.allocator);
     defer if (self.body.isFile()) self.allocator.free(value);
-    // TODO Create file
+    // TODO Create file and copy image if exist
 }
 
-test "section raw" {
+test "cover raw" {
     const alloc = testing.allocator;
 
     const raw =
@@ -30,12 +32,12 @@ test "section raw" {
         \\ <p>Something</p>
     ;
 
-    var section = Section.create(alloc, "chapter1", .{ .raw = raw });
+    var section = Cover.create(alloc, .{ .raw = raw }, null);
     try section.generate();
     try testing.expectEqualStrings(raw, try section.body.get(alloc));
 }
 
-test "section file" {
+test "cover file" {
     const alloc = testing.allocator;
 
     const cwd_path = try std.fs.cwd().realpathAlloc(alloc, ".");
@@ -43,15 +45,15 @@ test "section file" {
     const absolute_path = try std.fs.path.resolve(alloc, &.{ cwd_path, "README.md" });
     defer alloc.free(absolute_path);
 
-    var section = Section.create(alloc, "chapter2", .{ .file_path = absolute_path });
+    var section = Cover.create(alloc, .{ .file_path = absolute_path }, null);
     const value = try section.body.get(alloc);
     defer alloc.free(value);
     try section.generate();
     try testing.expectEqualStrings("zig-epub", value[2..10]);
 }
 
-test "section file error" {
+test "cover file error" {
     const alloc = testing.allocator;
-    var section = Section.create(alloc, "chapter3", .{ .file_path = "/no_existent" });
+    var section = Cover.create(alloc, .{ .file_path = "/no_existent.css" }, null);
     try testing.expectError(error.FileNotFound, section.body.get(alloc));
 }
