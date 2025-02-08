@@ -34,16 +34,19 @@ const Properties = struct {
     class: ?[]const u8 = null,
     id: ?[]const u8 = null,
 
-    fn concatProperties(self: Properties, allocator: std.mem.Allocator, begin: []const u8, end: []const u8) ![]const u8 {
+    fn concatProperties(self: Properties, allocator: std.mem.Allocator, begin: []const u8, end: []const u8, new_line_after: bool) ![]const u8 {
         const text = self.text orelse "text is empty";
+        const end_open_tag = if (new_line_after) "\">\n" else "\">";
 
-        if (self.class != null and self.id != null) return try std.mem.concat(allocator, u8, &.{ begin, " class=\"", self.class.?, "\" id=\"", self.id.?, "\">", text, end });
+        if (self.class != null and self.id != null) {
+            return try std.mem.concat(allocator, u8, &.{ begin, " class=\"", self.class.?, "\" id=\"", self.id.?, end_open_tag, text, end });
+        }
 
-        if (self.class) |class| return try std.mem.concat(allocator, u8, &.{ begin, " class=\"", class, "\">", text, end });
+        if (self.class) |class| return try std.mem.concat(allocator, u8, &.{ begin, " class=\"", class, end_open_tag, text, end });
 
-        if (self.id) |id| return try std.mem.concat(allocator, u8, &.{ begin, " id=\"", id, "\">", text, end });
+        if (self.id) |id| return try std.mem.concat(allocator, u8, &.{ begin, " id=\"", id, end_open_tag, text, end });
 
-        return try std.mem.concat(allocator, u8, &.{ begin, ">", text, end });
+        return try std.mem.concat(allocator, u8, &.{ begin, if (new_line_after) ">\n" else ">", text, end });
     }
 };
 
@@ -60,14 +63,14 @@ const HtmlTag = enum(u8) {
 
     fn enclose(self: HtmlTag, allocator: std.mem.Allocator, properties: Properties) ![]const u8 {
         return switch (self) {
-            .Header1 => try properties.concatProperties(allocator, "<h1", "</h1>\n"),
-            .Header2 => try properties.concatProperties(allocator, "<h2", "</h2>\n"),
-            .Header3 => try properties.concatProperties(allocator, "<h3", "</h3>\n"),
-            .Header4 => try properties.concatProperties(allocator, "<h4", "</h4>\n"),
-            .Header5 => try properties.concatProperties(allocator, "<h5", "</h5>\n"),
-            .Header6 => try properties.concatProperties(allocator, "<h6", "</h6>\n"),
-            .Div => try properties.concatProperties(allocator, "<div", "</div>\n"),
-            .Paragraph => try properties.concatProperties(allocator, "<p", "</p>\n"),
+            .Header1 => try properties.concatProperties(allocator, "<h1", "</h1>\n", false),
+            .Header2 => try properties.concatProperties(allocator, "<h2", "</h2>\n", false),
+            .Header3 => try properties.concatProperties(allocator, "<h3", "</h3>\n", false),
+            .Header4 => try properties.concatProperties(allocator, "<h4", "</h4>\n", false),
+            .Header5 => try properties.concatProperties(allocator, "<h5", "</h5>\n", false),
+            .Header6 => try properties.concatProperties(allocator, "<h6", "</h6>\n", false),
+            .Div => try properties.concatProperties(allocator, "<div", "</div>\n", true),
+            .Paragraph => try properties.concatProperties(allocator, "<p", "</p>\n", false),
             .Image => try std.mem.concat(allocator, u8, &.{ "<img src=\"images/", properties.text.?, "\" alt=\"", properties.text.?, "\" />\n" }),
         };
     }
@@ -94,7 +97,8 @@ test "html builder" {
     const inside_div = try builder.add(.{ .text = inner, .class = "cover" }, .Div).build();
 
     const expected =
-        \\<div class="cover"><h1>title</h1>
+        \\<div class="cover">
+        \\<h1>title</h1>
         \\<p id="p1">hello, world</p>
         \\<img src="images/cover.png" alt="cover.png" />
         \\</div>

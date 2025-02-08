@@ -5,14 +5,14 @@ pub const Body = union(enum) {
     file_path: []const u8,
 
     pub fn get(self: Body, allocator: std.mem.Allocator) ![]const u8 {
-        switch (self) {
-            .file_path => |f| return try readFileToString(allocator, f),
-            .raw => |r| return r,
-        }
+        return switch (self) {
+            .file_path => |f| try readFileToString(allocator, f),
+            .raw => |r| r,
+        };
     }
 
     fn readFileToString(allocator: std.mem.Allocator, file_path: []const u8) ![]const u8 {
-        var file = try std.fs.openFileAbsolute(file_path, .{});
+        var file = try std.fs.cwd().openFile(file_path, .{});
         defer file.close();
 
         const file_size = try file.getEndPos();
@@ -24,9 +24,9 @@ pub const Body = union(enum) {
     }
 
     pub fn isFile(self: Body) bool {
-        switch (self) {
-            .file_path => return true,
-            .raw => return false,
-        }
+        return switch (self) {
+            .file_path => true,
+            .raw => false,
+        };
     }
 };

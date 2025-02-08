@@ -1,30 +1,28 @@
 const std = @import("std");
-const Body = @import("body.zig").Body;
+const Body = @import("../util/body.zig").Body;
 const testing = std.testing;
 
-allocator: std.mem.Allocator,
 body: Body,
-image: ?[]const u8,
+allocator: std.mem.Allocator,
 
-const Cover = @This();
+const Stylesheet = @This();
 
-const name = "cover.xhtml";
+const name = "stylesheet.css";
 
-pub fn create(allocator: std.mem.Allocator, body: Body, image: ?[]const u8) Cover {
+pub fn create(allocator: std.mem.Allocator, body: Body) Stylesheet {
     return .{
         .allocator = allocator,
         .body = body,
-        .image = image,
     };
 }
 
-pub fn generate(self: Cover) !void {
+pub fn generate(self: Stylesheet) !void {
     const value = try self.body.get(self.allocator);
     defer if (self.body.isFile()) self.allocator.free(value);
-    // TODO Create file and copy image if exist
+    // TODO Create file
 }
 
-test "cover raw" {
+test "stylesheet raw" {
     const alloc = testing.allocator;
 
     const raw =
@@ -32,12 +30,12 @@ test "cover raw" {
         \\ <p>Something</p>
     ;
 
-    var section = Cover.create(alloc, .{ .raw = raw }, null);
+    var section = Stylesheet.create(alloc, .{ .raw = raw });
     try section.generate();
     try testing.expectEqualStrings(raw, try section.body.get(alloc));
 }
 
-test "cover file" {
+test "stylesheet file" {
     const alloc = testing.allocator;
 
     const cwd_path = try std.fs.cwd().realpathAlloc(alloc, ".");
@@ -45,15 +43,15 @@ test "cover file" {
     const absolute_path = try std.fs.path.resolve(alloc, &.{ cwd_path, "README.md" });
     defer alloc.free(absolute_path);
 
-    var section = Cover.create(alloc, .{ .file_path = absolute_path }, null);
+    var section = Stylesheet.create(alloc, .{ .file_path = absolute_path });
     const value = try section.body.get(alloc);
     defer alloc.free(value);
     try section.generate();
     try testing.expectEqualStrings("zig-epub", value[2..10]);
 }
 
-test "cover file error" {
+test "stylesheet file error" {
     const alloc = testing.allocator;
-    var section = Cover.create(alloc, .{ .file_path = "/no_existent.css" }, null);
+    var section = Stylesheet.create(alloc, .{ .file_path = "/no_existent.css" });
     try testing.expectError(error.FileNotFound, section.body.get(alloc));
 }

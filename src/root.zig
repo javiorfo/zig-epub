@@ -1,13 +1,10 @@
 const std = @import("std");
 const testing = std.testing;
 
-pub const Epub = @import("Epub.zig");
-pub const Section = @import("Section.zig");
-pub const Stylesheet = @import("Stylesheet.zig");
-pub const HtmlBuilder = @import("HtmlBuilder.zig");
-pub const UUID = @import("UUID.zig");
-pub const _ = @import("body.zig").Body;
+pub const Epub = @import("epub/Epub.zig");
+pub const HtmlBuilder = @import("html/HtmlBuilder.zig");
+pub const UUID = @import("util/UUID.zig");
 
 test {
-    testing.refAllDecls(@This());
+    testing.refAllDeclsRecursive(@This());
 }
