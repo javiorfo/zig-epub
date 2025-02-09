@@ -7,8 +7,6 @@ allocator: std.mem.Allocator,
 
 const Stylesheet = @This();
 
-const name = "stylesheet.css";
-
 pub fn create(allocator: std.mem.Allocator, body: Body) Stylesheet {
     return .{
         .allocator = allocator,
@@ -16,22 +14,26 @@ pub fn create(allocator: std.mem.Allocator, body: Body) Stylesheet {
     };
 }
 
-pub fn generate(self: Stylesheet) !void {
+pub fn generate(self: Stylesheet, output: []const u8) !void {
     const value = try self.body.get(self.allocator);
     defer if (self.body.isFile()) self.allocator.free(value);
-    // TODO Create file
+
+    var file = try std.fs.cwd().createFile(output, .{});
+    defer file.close();
+
+    try file.writeAll(value);
 }
 
 test "stylesheet raw" {
     const alloc = testing.allocator;
 
     const raw =
-        \\ <h1>Title</h2>
-        \\ <p>Something</p>
+        \\ body {
+        \\   background: 'black'
+        \\ } 
     ;
 
     var section = Stylesheet.create(alloc, .{ .raw = raw });
-    try section.generate();
     try testing.expectEqualStrings(raw, try section.body.get(alloc));
 }
 
@@ -46,7 +48,6 @@ test "stylesheet file" {
     var section = Stylesheet.create(alloc, .{ .file_path = absolute_path });
     const value = try section.body.get(alloc);
     defer alloc.free(value);
-    try section.generate();
     try testing.expectEqualStrings("zig-epub", value[2..10]);
 }
 

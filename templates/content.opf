@@ -5,19 +5,19 @@
   <metadata>
     <dc:title>{{title}}</dc:title>
     <dc:creator>{{creator}}</dc:creator>
-    <dc:identifier id="bookid">urn:uuid:0cc33cbd-94e2-49c1-909a-72ae16bc2658</dc:identifier>
-    <dc:identifier id="isbn">978-1-234-56789-0</dc:identifier>
+    <dc:identifier id="bookid">{{identifier}}</dc:identifier>
     <dc:language>{{lang}}</dc:language>
-    <meta name="cover" content="cover-image" />
     <dc:date>{{date}}</dc:date>
     <dc:publisher>{{publisher}}</dc:publisher>
+    <meta name="cover" content="cover-image" />
   </metadata>
   <manifest>
     <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
-    <item id="cover" href="title.html" media-type="application/xhtml+xml"/>
-    <item id="content" href="content.html" media-type="application/xhtml+xml"/>
-    <item id="content2" href="content2.html" media-type="application/xhtml+xml"/>
     <item id="cover-image" href="images/cover.jpg" media-type="image/jpg"/>
+
+    <item id="cover" href="cover.xhtml" media-type="application/xhtml+xml"/>
+    <item id="content" href="content.xhtml" media-type="application/xhtml+xml"/>
+    <item id="content2" href="content2.xhtml" media-type="application/xhtml+xml"/>
     <item id="css" href="stylesheet.css" media-type="text/css"/>
   </manifest>
   <spine toc="ncx">
@@ -26,6 +26,9 @@
     <itemref idref="content2"/>
   </spine>
   <guide>
-    <reference href="title.html" type="cover" title="Cover"/>
+    <reference href="cover.xhtml" type="cover" title="Cover"/>
+    <reference href="toc.ncx" type="toc" title="Table of Contents"/>
+    <reference href="preface.xhtml" type="preface" title="Preface"/>
+    <reference href="index.xhtml" type="index" title="Index"/>
   </guide>
 </package>

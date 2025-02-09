@@ -54,6 +54,6 @@ test "cover file" {
 
 test "cover file error" {
     const alloc = testing.allocator;
-    var section = Cover.create(alloc, .{ .file_path = "/no_existent.css" }, null);
+    var section = Cover.create(alloc, .{ .file_path = "/no_existent" }, null);
     try testing.expectError(error.FileNotFound, section.body.get(alloc));
 }

@@ -2,6 +2,7 @@ const std = @import("std");
 const UUID = @import("../util/UUID.zig");
 const Section = @import("Section.zig");
 const Body = @import("../util/body.zig").Body;
+const output = @import("../util/output.zig");
 const Stylesheet = @import("Stylesheet.zig");
 const Cover = @import("Cover.zig");
 const Metadata = @import("Metadata.zig");
@@ -24,14 +25,18 @@ pub fn init(allocator: std.mem.Allocator, metadata: Metadata) Epub {
 }
 
 pub fn deinit(self: *Epub) void {
-    self.sections.?.deinit();
+    if (self.sections) |s| s.deinit();
 }
 
-pub fn addSection(self: *Epub, name: []const u8, body: Body) *Epub {
+pub fn addSection(self: *Epub, title: []const u8, body: Body) *Epub {
+    return self.addSectionWithReferenceType(title, Section.ReferenceType.Text, body);
+}
+
+pub fn addSectionWithReferenceType(self: *Epub, title: []const u8, reference_type: Section.ReferenceType, body: Body) *Epub {
     if (self.sections == null) self.sections = std.ArrayList(Section).init(self.allocator);
 
-    self.sections.?.append(Section.create(self.allocator, name, body)) catch {
-        std.log.err("Error adding section {s}", .{name});
+    self.sections.?.append(Section.create(self.allocator, title, reference_type, body)) catch {
+        std.log.err("Error adding section {s}", .{title});
     };
     return self;
 }
@@ -59,15 +64,18 @@ pub fn addCoverWithImage(self: *Epub, body: Body, image_path: []const u8) *Epub 
 pub fn generate(self: *Epub, epub_path: []const u8) !void {
     // TODO if stylesheet and cover are not null
     // check if name has .epub ext
-    _ = self;
     _ = epub_path;
+    try output.createEpubFiles(self);
 }
 
 test "epub" {
     const allocator = testing.allocator;
 
-    const uuid = UUID.new();
-    var epub = Epub.init(allocator, .{ .title = "test", .creator = "John", .identifier = .{ .identifier_type = .UUID, .value = uuid } });
+    var epub = Epub.init(allocator, .{
+        .title = "Flying Circus",
+        .creator = "Johann Gambolputty",
+        .identifier = Metadata.defaultIdentifier(),
+    });
     defer epub.deinit();
 
     var mock_images_paths = [_][]const u8{
@@ -79,8 +87,9 @@ test "epub" {
         .addStylesheet(.{ .raw = "body { background: '#808080' }" })
         .addCoverWithImage(.{ .raw = "<h1>title</h1>" }, "/path/to/img.png")
         .addImages(&mock_images_paths)
-        .addSection("chapter1", .{ .raw = "<p>test</p>" })
-        .addSection("chapter2", .{ .raw = "<p>test</p>" })
+        .addSectionWithReferenceType("Preface", .Preface, .{ .raw = "<p>preface</p>" })
+        .addSection("Chapter 1", .{ .raw = "<p>test</p>" })
+        .addSection("Chapter 2", .{ .raw = "<p>test</p>" })
         .generate("MyEpub");
 
     try testing.expect(@TypeOf(epub) == Epub);
