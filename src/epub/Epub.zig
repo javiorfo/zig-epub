@@ -4,7 +4,6 @@ const Section = @import("Section.zig");
 const Body = @import("../util/body.zig").Body;
 const output = @import("../util/output.zig");
 const Stylesheet = @import("Stylesheet.zig");
-const Cover = @import("Cover.zig");
 const Metadata = @import("Metadata.zig");
 const testing = std.testing;
 
@@ -12,7 +11,8 @@ allocator: std.mem.Allocator,
 metadata: Metadata,
 sections: ?std.ArrayList(Section) = null,
 stylesheet: ?Stylesheet = null,
-cover: ?Cover = null,
+cover: ?Section = null,
+cover_image: ?[]const u8 = null,
 images: ?[][]const u8 = null,
 
 const Epub = @This();
@@ -29,10 +29,10 @@ pub fn deinit(self: *Epub) void {
 }
 
 pub fn addSection(self: *Epub, title: []const u8, body: Body) *Epub {
-    return self.addSectionWithReferenceType(title, Section.ReferenceType.Text, body);
+    return self.addSectionType(title, body, Section.ReferenceType.Text);
 }
 
-pub fn addSectionWithReferenceType(self: *Epub, title: []const u8, reference_type: Section.ReferenceType, body: Body) *Epub {
+pub fn addSectionType(self: *Epub, title: []const u8, body: Body, reference_type: Section.ReferenceType) *Epub {
     if (self.sections == null) self.sections = std.ArrayList(Section).init(self.allocator);
 
     self.sections.?.append(Section.create(self.allocator, title, reference_type, body)) catch {
@@ -52,12 +52,12 @@ pub fn addImages(self: *Epub, paths: [][]const u8) *Epub {
 }
 
 pub fn addCover(self: *Epub, body: Body) *Epub {
-    self.cover = Cover.create(self.allocator, body, null);
+    self.cover = Section.create(self.allocator, self.metadata.title, Section.ReferenceType.Cover, body);
     return self;
 }
 
-pub fn addCoverWithImage(self: *Epub, body: Body, image_path: []const u8) *Epub {
-    self.cover = Cover.create(self.allocator, body, image_path);
+pub fn addCoverImage(self: *Epub, cover_image_path: []const u8) *Epub {
+    self.cover_image = cover_image_path;
     return self;
 }
 
@@ -79,15 +79,16 @@ test "epub" {
     defer epub.deinit();
 
     var mock_images_paths = [_][]const u8{
-        "/path/to/img1.jpg",
-        "/path/to/img2.jpg",
+        "/home/javier/Downloads/cats.jpg",
+        "/home/javier/Downloads/cats.jpg",
     };
 
     try epub
         .addStylesheet(.{ .raw = "body { background: '#808080' }" })
-        .addCoverWithImage(.{ .raw = "<h1>title</h1>" }, "/path/to/img.png")
+        .addCoverImage("/home/javier/Downloads/cats.jpg")
         .addImages(&mock_images_paths)
-        .addSectionWithReferenceType("Preface", .Preface, .{ .raw = "<p>preface</p>" })
+        .addCover(.{ .raw = "<div class=\"cover\"><img src=\"images/cats.jpg\" alt=\"Cover Image\"/></div>" })
+        .addSectionType("Preface", .{ .raw = "<p>preface</p>" }, .Preface)
         .addSection("Chapter 1", .{ .raw = "<p>test</p>" })
         .addSection("Chapter 2", .{ .raw = "<p>test</p>" })
         .generate("MyEpub");

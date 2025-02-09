@@ -1,13 +1,6 @@
 const std = @import("std");
 const UUID = @import("../util/UUID.zig");
 
-const uuid_ident_template =
-    \\<dc:identifier id="bookid">urn:uuid:{s}</dc:identifier>
-;
-const isbn_ident_template =
-    \\<dc:identifier id="bookid">urn:isbn:{s}</dc:identifier>
-;
-
 title: []const u8,
 creator: []const u8,
 identifier: Identifier,
@@ -27,11 +20,6 @@ pub fn defaultIdentifier() Identifier {
 const Identifier = struct {
     value: []const u8,
     identifier_type: IdentifierType,
-
-    fn createIdentifierTag(self: Identifier) []const u8 {
-        _ = self;
-        return "";
-    }
 };
 
 const IdentifierType = enum(u2) {
@@ -85,7 +73,7 @@ const Language = enum(u8) {
             .Slovak => "sk",
             .Slovenian => "sl",
             .Spanish => "es",
-            .Swedishw => "sv",
+            .Swedish => "sv",
             .Turkish => "tr",
         };
     }
