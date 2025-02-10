@@ -1,5 +1,8 @@
 const std = @import("std");
 
+// --------------------------------
+// CONTENT OPF
+// --------------------------------
 pub const content_opf_package_metadata =
     \\<?xml version='1.0' encoding='utf-8'?>
     \\<package xmlns="http://www.idpf.org/2007/opf"
@@ -106,4 +109,36 @@ pub const content_opf_spine_item =
 pub const content_opf_guide_reference =
     \\    <reference href="{s}.xhtml" type="{s}" title="{s}"/>
     \\
+;
+
+// --------------------------------
+// ITEMS xhtml
+// --------------------------------
+pub const items_xhtml_open_tag =
+    \\<!DOCTYPE html>
+    \\<html xmlns="http://www.w3.org/1999/xhtml">
+    \\<head>
+    \\  <meta charset="utf-8"/>
+    \\
+;
+
+pub const items_xhtml_title =
+    \\  <title>{s}</title>
+    \\
+;
+
+pub const items_xhtml_stylesheet =
+    \\  <link rel="stylesheet" type="text/css" href="stylesheet.css"/>
+    \\
+;
+
+pub const items_xhtml_open_body =
+    \\</head>
+    \\<body>
+    \\
+;
+
+pub const items_xhtml_close_body =
+    \\</body>
+    \\</html>
 ;

@@ -32,13 +32,14 @@ pub fn createEpubFiles(epub: *Epub) !void {
     try createFileAndWrite(container, container_content);
 
     try createContentOpf(epub);
+    try createSections(epub);
 
     std.log.debug("Generating stylesheet if set: {s}\n", .{stylesheet});
     if (epub.stylesheet) |ss| try ss.generate(stylesheet);
 
     std.log.debug("Copying cover image if set: {any}\n", .{epub.cover_image});
-    if (epub.cover_image) |path| {
-        try saveToImageFolder(epub.allocator, path);
+    if (epub.cover_image) |cover_image| {
+        try saveToImageFolder(epub.allocator, cover_image.path);
     }
 
     std.log.debug("Copying images if set: {any}\n", .{epub.cover_image});
@@ -137,5 +138,70 @@ fn createContentOpf(epub: *Epub) !void {
         try file.writeAll(html);
     }
 
-    // cover_img
+    if (epub.cover_image) |cover_image| {
+        const img = try std.fmt.allocPrint(epub.allocator, xhtml.content_opf_manifest_cover_image, .{
+            std.fs.path.basename(cover_image.path),
+            cover_image.image_type.toString(),
+        });
+
+        defer epub.allocator.free(img);
+        try file.writeAll(img);
+    }
+
+    try file.writeAll(xhtml.content_opf_manifest_spine);
+
+    // SPINE
+    if (epub.cover) |_| try file.writeAll(xhtml.content_opf_spine_cover);
+
+    if (epub.sections) |sections| {
+        for (sections.items) |section| {
+            const id = try std.mem.replaceOwned(u8, epub.allocator, section.title, " ", "");
+            defer epub.allocator.free(id);
+            const idref = try std.fmt.allocPrint(epub.allocator, xhtml.content_opf_spine_item, .{id});
+            defer epub.allocator.free(idref);
+            try file.writeAll(idref);
+        }
+    }
+
+    try file.writeAll(xhtml.content_opf_spine_guide);
+
+    if (epub.cover) |cover| {
+        const html = try std.fmt.allocPrint(epub.allocator, xhtml.content_opf_guide_reference, .{
+            "cover",
+            "cover",
+            cover.title,
+        });
+        defer epub.allocator.free(html);
+        try file.writeAll(html);
+    }
+
+    if (epub.sections) |sections| {
+        for (sections.items) |section| {
+            const id = try std.mem.replaceOwned(u8, epub.allocator, section.title, " ", "");
+            defer epub.allocator.free(id);
+            const html = try std.fmt.allocPrint(epub.allocator, xhtml.content_opf_guide_reference, .{
+                id,
+                section.reference_type.toString(),
+                section.title,
+            });
+            defer epub.allocator.free(html);
+            try file.writeAll(html);
+        }
+    }
+
+    try file.writeAll(xhtml.content_opf_guide_package);
+}
+
+fn createSections(epub: *Epub) !void {
+    const add_stylesheet = if (epub.stylesheet) |_| true else false;
+
+    if (epub.cover) |cover| {
+        try cover.generate(add_stylesheet, oebps_folder, true);
+    }
+
+    if (epub.sections) |sections| {
+        for (sections.items) |section| {
+            try section.generate(add_stylesheet, oebps_folder, false);
+        }
+    }
 }

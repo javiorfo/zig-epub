@@ -1,5 +1,5 @@
 const std = @import("std");
-const UUID = @import("../util/UUID.zig");
+const uuid = @import("../util/uuid.zig");
 
 title: []const u8,
 creator: []const u8,
@@ -13,7 +13,7 @@ const Metadata = @This();
 pub fn defaultIdentifier() Identifier {
     return .{
         .identifier_type = .UUID,
-        .value = UUID.new(),
+        .value = uuid.new(),
     };
 }
 

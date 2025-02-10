@@ -1,9 +1,9 @@
 const std = @import("std");
-const UUID = @import("../util/UUID.zig");
 const Section = @import("Section.zig");
 const Body = @import("../util/body.zig").Body;
 const output = @import("../util/output.zig");
 const Stylesheet = @import("Stylesheet.zig");
+const CoverImage = @import("CoverImage.zig");
 const Metadata = @import("Metadata.zig");
 const testing = std.testing;
 
@@ -12,7 +12,7 @@ metadata: Metadata,
 sections: ?std.ArrayList(Section) = null,
 stylesheet: ?Stylesheet = null,
 cover: ?Section = null,
-cover_image: ?[]const u8 = null,
+cover_image: ?CoverImage = null,
 images: ?[][]const u8 = null,
 
 const Epub = @This();
@@ -56,8 +56,8 @@ pub fn addCover(self: *Epub, body: Body) *Epub {
     return self;
 }
 
-pub fn addCoverImage(self: *Epub, cover_image_path: []const u8) *Epub {
-    self.cover_image = cover_image_path;
+pub fn addCoverImage(self: *Epub, cover_image: CoverImage) *Epub {
+    self.cover_image = cover_image;
     return self;
 }
 
@@ -85,12 +85,12 @@ test "epub" {
 
     try epub
         .addStylesheet(.{ .raw = "body { background: '#808080' }" })
-        .addCoverImage("/home/javier/Downloads/cats.jpg")
+        .addCoverImage(.{ .path = "/home/javier/Downloads/cats.jpg", .image_type = .jpg })
         .addImages(&mock_images_paths)
         .addCover(.{ .raw = "<div class=\"cover\"><img src=\"images/cats.jpg\" alt=\"Cover Image\"/></div>" })
-        .addSectionType("Preface", .{ .raw = "<p>preface</p>" }, .Preface)
-        .addSection("Chapter 1", .{ .raw = "<p>test</p>" })
-        .addSection("Chapter 2", .{ .raw = "<p>test</p>" })
+        .addSectionType("Preface", .{ .raw = "<p>preface</p>\n" }, .Preface)
+        .addSection("Chapter 1", .{ .raw = "<h1>Chapter 1</h1>\n<p>Hello</p>\n" })
+        .addSection("Chapter 2", .{ .raw = "<h1>Chapter 1</h1>\n<p>Bye</p>\n" })
         .generate("MyEpub");
 
     try testing.expect(@TypeOf(epub) == Epub);
