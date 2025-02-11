@@ -1,5 +1,6 @@
 const std = @import("std");
 const Epub = @import("../epub/Epub.zig");
+const Section = @import("../epub/Section.zig");
 const xhtml = @import("xhtml.zig");
 
 const output_folder = "epub-files";
@@ -11,6 +12,7 @@ const images_folder = oebps_folder ++ "images/";
 const stylesheet = oebps_folder ++ "stylesheet.css";
 const container = meta_inf_folder ++ "container.xml";
 const content_opf = oebps_folder ++ "content.opf";
+const toc = oebps_folder ++ "toc.ncx";
 
 const container_content =
     \\<?xml version="1.0"?>
@@ -33,6 +35,7 @@ pub fn createEpubFiles(epub: *Epub) !void {
 
     try createContentOpf(epub);
     try createSections(epub);
+    try createToc(epub);
 
     std.log.debug("Generating stylesheet if set: {s}\n", .{stylesheet});
     if (epub.stylesheet) |ss| try ss.generate(stylesheet);
@@ -165,6 +168,7 @@ fn createContentOpf(epub: *Epub) !void {
 
     try file.writeAll(xhtml.content_opf_spine_guide);
 
+    // GUIDE
     if (epub.cover) |cover| {
         const html = try std.fmt.allocPrint(epub.allocator, xhtml.content_opf_guide_reference, .{
             "cover",
@@ -196,12 +200,101 @@ fn createSections(epub: *Epub) !void {
     const add_stylesheet = if (epub.stylesheet) |_| true else false;
 
     if (epub.cover) |cover| {
-        try cover.generate(add_stylesheet, oebps_folder, true);
+        try cover.createFile(add_stylesheet, oebps_folder, true);
     }
 
     if (epub.sections) |sections| {
         for (sections.items) |section| {
-            try section.generate(add_stylesheet, oebps_folder, false);
+            try section.createFile(add_stylesheet, oebps_folder, false);
         }
     }
+}
+
+fn createToc(epub: *Epub) !void {
+    var file = try std.fs.cwd().createFile(toc, .{});
+    defer file.close();
+    try file.writeAll(xhtml.toc_open_tag);
+
+    const metadata = epub.metadata;
+
+    const identifier = switch (metadata.identifier.identifier_type) {
+        .ISBN => try std.fmt.allocPrint(epub.allocator, xhtml.toc_uid, .{ "isbn", metadata.identifier.value }),
+        .UUID => try std.fmt.allocPrint(epub.allocator, xhtml.toc_uid, .{ "uuid", metadata.identifier.value }),
+    };
+    defer epub.allocator.free(identifier);
+    try file.writeAll(identifier);
+
+    try file.writeAll(xhtml.toc_doc_title);
+
+    const title = try std.fmt.allocPrint(epub.allocator, xhtml.toc_title_text, .{metadata.title});
+    defer epub.allocator.free(title);
+    try file.writeAll(title);
+
+    try file.writeAll(xhtml.toc_open_nav_map);
+
+    var index: usize = 1;
+    if (epub.cover) |cover| {
+        const nav_point = try std.fmt.allocPrint(epub.allocator, xhtml.toc_nav_point, .{ index, index });
+        defer epub.allocator.free(nav_point);
+        try file.writeAll(nav_point);
+
+        const nav_label = try std.fmt.allocPrint(epub.allocator, xhtml.toc_nav_point_text, .{cover.title});
+        defer epub.allocator.free(nav_label);
+        try file.writeAll(nav_label);
+
+        const content = try std.fmt.allocPrint(epub.allocator, xhtml.toc_nav_point_content, .{"cover"});
+        defer epub.allocator.free(content);
+        try file.writeAll(content);
+
+        try file.writeAll(xhtml.toc_close_nav_point);
+        index += 1;
+    }
+
+    if (epub.sections) |sections| {
+        for (sections.items) |section| {
+            try createNavPoint(epub.allocator, &file, &index, section);
+        }
+    }
+
+    try file.writeAll(xhtml.toc_close);
+}
+
+fn createNavPoint(allocator: std.mem.Allocator, file: *std.fs.File, index: *usize, section: Section) !void {
+    const nav_point = try std.fmt.allocPrint(allocator, xhtml.toc_nav_point, .{ index.*, index.* });
+    defer allocator.free(nav_point);
+    try file.writeAll(nav_point);
+
+    const nav_label = try std.fmt.allocPrint(allocator, xhtml.toc_nav_point_text, .{section.title});
+    defer allocator.free(nav_label);
+    try file.writeAll(nav_label);
+
+    const src = try std.mem.replaceOwned(u8, allocator, section.title, " ", "");
+    defer allocator.free(src);
+
+    const content = try std.fmt.allocPrint(allocator, xhtml.toc_nav_point_content, .{src});
+    defer allocator.free(content);
+    try file.writeAll(content);
+
+    if (section.tocs) |tocs| {
+        for (tocs.items, 0..) |tc, i| {
+            const parent_index = index.*;
+            index.* += 1;
+            const nav_point_child = try std.fmt.allocPrint(allocator, xhtml.toc_nav_point_child, .{ parent_index, i + 1, index.* });
+            defer allocator.free(nav_point_child);
+            try file.writeAll(nav_point_child);
+
+            const nav_label_child = try std.fmt.allocPrint(allocator, xhtml.toc_nav_point_text_child, .{tc.text});
+            defer allocator.free(nav_label_child);
+            try file.writeAll(nav_label_child);
+
+            const content_child = try std.fmt.allocPrint(allocator, xhtml.toc_nav_point_content_child, .{ src, tc.reference_id });
+            defer allocator.free(content_child);
+            try file.writeAll(content_child);
+
+            try file.writeAll(xhtml.toc_close_nav_point_child);
+        }
+    }
+
+    try file.writeAll(xhtml.toc_close_nav_point);
+    index.* += 1;
 }

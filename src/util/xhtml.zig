@@ -142,3 +142,84 @@ pub const items_xhtml_close_body =
     \\</body>
     \\</html>
 ;
+
+// --------------------------------
+// Table of Contents xhtml
+// --------------------------------
+pub const toc_open_tag =
+    \\<?xml version='1.0' encoding='utf-8'?>
+    \\<!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">
+    \\<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
+    \\  <head>
+    \\
+;
+
+pub const toc_uid =
+    \\    <meta name="dtb:uid" content="urn:{s}:{s}"/>
+    \\
+;
+
+pub const toc_doc_title =
+    \\    <meta name="dtb:depth" content="1"/>
+    \\    <meta name="dtb:totalPageCount" content="0"/>
+    \\    <meta name="dtb:maxPageNumber" content="0"/>
+    \\  </head>
+    \\  <docTitle>
+    \\
+;
+
+pub const toc_title_text =
+    \\    <text>{s}</text>
+    \\
+;
+
+pub const toc_open_nav_map =
+    \\  </docTitle>
+    \\  <navMap>
+    \\
+;
+
+pub const toc_nav_point =
+    \\    <navPoint id="navPoint-{d}" playOrder="{d}">
+    \\
+;
+
+pub const toc_nav_point_text =
+    \\      <navLabel><text>{s}</text></navLabel>
+    \\
+;
+
+pub const toc_nav_point_content =
+    \\      <content src="{s}.xhtml"/>
+    \\
+;
+
+pub const toc_close_nav_point =
+    \\    </navPoint>
+    \\
+;
+
+pub const toc_nav_point_child =
+    \\      <navPoint id="navPoint-{d}.{d}" playOrder="{d}">
+    \\
+;
+
+pub const toc_nav_point_text_child =
+    \\        <navLabel><text>{s}</text></navLabel>
+    \\
+;
+
+pub const toc_nav_point_content_child =
+    \\        <content src="{s}.xhtml#{s}"/>
+    \\
+;
+
+pub const toc_close_nav_point_child =
+    \\      </navPoint>
+    \\
+;
+
+pub const toc_close =
+    \\  </navMap>
+    \\</ncx>
+;

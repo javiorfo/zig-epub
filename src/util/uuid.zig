@@ -5,11 +5,9 @@ const hex = "0123456789abcdef";
 
 pub fn new() []const u8 {
     var bytes: [16]u8 = undefined;
-    //     const seed: u64 = @intCast(@as(i128, @bitCast(std.time.nanoTimestamp())));
-    //     var prng = std.rand.DefaultPrng.init(seed);
-    //     prng.random().bytes(&bytes);
-
-    std.crypto.random.bytes(&bytes);
+    const seed: u64 = @intCast(@as(i128, @bitCast(std.time.nanoTimestamp())));
+    var prng = std.rand.DefaultPrng.init(seed);
+    prng.random().bytes(&bytes);
 
     bytes[6] = (bytes[6] & 0x0f) | 0x40;
     bytes[8] = (bytes[8] & 0x3f) | 0x80;

@@ -7,19 +7,41 @@ title: []const u8,
 body: Body,
 allocator: std.mem.Allocator,
 reference_type: ReferenceType = .Text,
+tocs: ?std.ArrayList(Toc) = null,
 
 const Section = @This();
 
-pub fn create(allocator: std.mem.Allocator, title: []const u8, reference_type: ReferenceType, body: Body) Section {
+pub fn init(allocator: std.mem.Allocator, title: []const u8, body: Body) Section {
     return .{
         .allocator = allocator,
         .title = title,
-        .reference_type = reference_type,
         .body = body,
     };
 }
 
-pub fn generate(self: Section, add_stylesheet: bool, output_folder: []const u8, is_cover: bool) !void {
+pub fn deinit(self: *Section) void {
+    if (self.tocs) |s| s.deinit();
+}
+
+pub fn withReferenceType(self: *Section, reference_type: ReferenceType) *Section {
+    self.reference_type = reference_type;
+    return self;
+}
+
+pub fn addToc(self: *Section, toc: Toc) *Section {
+    if (self.tocs == null) self.tocs = std.ArrayList(Toc).init(self.allocator);
+
+    self.tocs.?.append(toc) catch {
+        std.log.err("Error adding toc {s}", .{toc.text});
+    };
+    return self;
+}
+
+pub fn build(self: *Section) Section {
+    return self.*;
+}
+
+pub fn createFile(self: Section, add_stylesheet: bool, output_folder: []const u8, is_cover: bool) !void {
     const value = try self.body.get(self.allocator);
     defer if (self.body.isFile()) self.allocator.free(value);
 
@@ -43,6 +65,11 @@ pub fn generate(self: Section, add_stylesheet: bool, output_folder: []const u8, 
     try file.writeAll(value);
     try file.writeAll(xhtml.items_xhtml_close_body);
 }
+
+pub const Toc = struct {
+    text: []const u8,
+    reference_id: []const u8,
+};
 
 pub const ReferenceType = enum(u8) {
     Acknowledgements,
@@ -84,7 +111,8 @@ test "section raw" {
         \\ <p>Something</p>
     ;
 
-    var section = Section.create(alloc, "Chapter 1", .Text, .{ .raw = raw });
+    var section = Section.init(alloc, "Chapter 1", .{ .raw = raw });
+    defer section.deinit();
     try testing.expectEqualStrings(raw, try section.body.get(alloc));
 }
 
@@ -96,7 +124,8 @@ test "section file" {
     const absolute_path = try std.fs.path.resolve(alloc, &.{ cwd_path, "README.md" });
     defer alloc.free(absolute_path);
 
-    var section = Section.create(alloc, "Chapter 2", .Text, .{ .file_path = absolute_path });
+    var section = Section.init(alloc, "Chapter 2", .{ .file_path = absolute_path });
+    defer section.deinit();
     const value = try section.body.get(alloc);
     defer alloc.free(value);
     try testing.expectEqualStrings("zig-epub", value[2..10]);
@@ -104,7 +133,8 @@ test "section file" {
 
 test "section file error" {
     const alloc = testing.allocator;
-    var section = Section.create(alloc, "Chapter 3", .Text, .{ .file_path = "/no_existent" });
+    var section = Section.init(alloc, "Chapter 3", .{ .file_path = "/no_existent" });
+    defer section.deinit();
     try testing.expectError(error.FileNotFound, section.body.get(alloc));
 }
 
