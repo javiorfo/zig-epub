@@ -94,7 +94,10 @@ test "epub" {
     var epub = Epub.init(allocator, .{
         .title = "Flying Circus",
         .creator = "Johann Gambolputty",
-        .identifier = Metadata.defaultIdentifier(),
+        .identifier = .{
+            .identifier_type = .UUID,
+            .value = "d5b2b585-566a-4b9c-9c5d-f99436e3a588",
+        },
     });
     defer epub.deinit();
 
@@ -114,7 +117,7 @@ test "epub" {
         .addSectionType("Preface", .{ .raw = "<p>preface</p>\n" }, .Preface)
         .add(section.addToc(.{ .text = "Chapter 1.1", .reference_id = "chapter1.1" }).build())
         .addSection("Chapter 2", .{ .raw = "<h1>Chapter 2</h1>\n<p>Bye</p>\n" })
-        .generate("MyEpub");
+        .generate("epub_file");
 
     try testing.expect(@TypeOf(epub) == Epub);
 }

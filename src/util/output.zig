@@ -232,9 +232,10 @@ fn createToc(epub: *Epub) !void {
 
     try file.writeAll(xhtml.toc_open_nav_map);
 
-    var index: usize = 1;
+    var play_order: usize = 1;
+    var nav_point_id: usize = 1;
     if (epub.cover) |cover| {
-        const nav_point = try std.fmt.allocPrint(epub.allocator, xhtml.toc_nav_point, .{ index, index });
+        const nav_point = try std.fmt.allocPrint(epub.allocator, xhtml.toc_nav_point, .{ nav_point_id, play_order });
         defer epub.allocator.free(nav_point);
         try file.writeAll(nav_point);
 
@@ -247,20 +248,21 @@ fn createToc(epub: *Epub) !void {
         try file.writeAll(content);
 
         try file.writeAll(xhtml.toc_close_nav_point);
-        index += 1;
+        play_order += 1;
+        nav_point_id += 1;
     }
 
     if (epub.sections) |sections| {
         for (sections.items) |section| {
-            try createNavPoint(epub.allocator, &file, &index, section);
+            try createNavPoint(epub.allocator, &file, &play_order, &nav_point_id, section);
         }
     }
 
     try file.writeAll(xhtml.toc_close);
 }
 
-fn createNavPoint(allocator: std.mem.Allocator, file: *std.fs.File, index: *usize, section: Section) !void {
-    const nav_point = try std.fmt.allocPrint(allocator, xhtml.toc_nav_point, .{ index.*, index.* });
+fn createNavPoint(allocator: std.mem.Allocator, file: *std.fs.File, play_order: *usize, nav_point_id: *usize, section: Section) !void {
+    const nav_point = try std.fmt.allocPrint(allocator, xhtml.toc_nav_point, .{ nav_point_id.*, play_order.* });
     defer allocator.free(nav_point);
     try file.writeAll(nav_point);
 
@@ -277,9 +279,8 @@ fn createNavPoint(allocator: std.mem.Allocator, file: *std.fs.File, index: *usiz
 
     if (section.tocs) |tocs| {
         for (tocs.items, 0..) |tc, i| {
-            const parent_index = index.*;
-            index.* += 1;
-            const nav_point_child = try std.fmt.allocPrint(allocator, xhtml.toc_nav_point_child, .{ parent_index, i + 1, index.* });
+            play_order.* += 1;
+            const nav_point_child = try std.fmt.allocPrint(allocator, xhtml.toc_nav_point_child, .{ nav_point_id.*, i + 1, play_order.* });
             defer allocator.free(nav_point_child);
             try file.writeAll(nav_point_child);
 
@@ -296,5 +297,6 @@ fn createNavPoint(allocator: std.mem.Allocator, file: *std.fs.File, index: *usiz
     }
 
     try file.writeAll(xhtml.toc_close_nav_point);
-    index.* += 1;
+    play_order.* += 1;
+    nav_point_id.* += 1;
 }

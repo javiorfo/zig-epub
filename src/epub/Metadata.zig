@@ -10,13 +10,6 @@ publisher: ?[]const u8 = null,
 
 const Metadata = @This();
 
-pub fn defaultIdentifier() Identifier {
-    return .{
-        .identifier_type = .UUID,
-        .value = uuid.new(),
-    };
-}
-
 const Identifier = struct {
     value: []const u8,
     identifier_type: IdentifierType,

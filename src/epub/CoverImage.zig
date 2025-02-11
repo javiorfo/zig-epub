@@ -7,15 +7,13 @@ const CoverImage = @This();
 
 const ImageType = enum(u8) {
     jpg,
+    jpeg,
     png,
-    svg,
     gif,
-    tiff,
-    bmp,
-    webp,
 
     pub fn toString(self: ImageType) []const u8 {
         return switch (self) {
+            .jpg => "jpeg",
             inline else => |tag| @tagName(tag),
         };
     }
