@@ -5,20 +5,19 @@ pub fn build(b: *std.Build) void {
 
     const optimize = b.standardOptimizeOption(.{});
 
-    const lib = b.addStaticLibrary(.{
-        .name = "zig-epub",
+    _ = b.addModule("epub", .{
         .root_source_file = b.path("src/root.zig"),
-        .target = target,
-        .optimize = optimize,
+        .link_libc = true,
     });
-
-    b.installArtifact(lib);
 
     const lib_unit_tests = b.addTest(.{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
         .optimize = optimize,
+        .link_libc = true,
     });
+
+    lib_unit_tests.linkSystemLibrary("zip");
 
     const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
 
