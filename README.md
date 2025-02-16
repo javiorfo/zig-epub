@@ -19,7 +19,7 @@ This library will generate an epub with the current compressed files:
     - **stylesheet.css**
 - **mimetype**
 
-- **NOTE:** Only one level of subchapter is available when using Table of Contents at the moment. Ex: Chapter 1 -> Chapter 1.1, Chapter 1.2, etc.
+**NOTE:** Only one level of subchapter is available when using Table of Contents at the moment. Ex: Chapter 1 -> Chapter 1.1, Chapter 1.2, etc.
 
 ## Usage
 ```zig
