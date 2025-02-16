@@ -2,7 +2,7 @@ const std = @import("std");
 
 pub const Body = union(enum) {
     raw: []const u8,
-    file_path: []const u8,
+    filepath: []const u8,
 
     pub fn get(self: Body, allocator: std.mem.Allocator) ![]const u8 {
         return switch (self) {
@@ -11,8 +11,8 @@ pub const Body = union(enum) {
         };
     }
 
-    fn readFileToString(allocator: std.mem.Allocator, file_path: []const u8) ![]const u8 {
-        var file = try std.fs.cwd().openFile(file_path, .{});
+    fn readFileToString(allocator: std.mem.Allocator, filepath: []const u8) ![]const u8 {
+        var file = try std.fs.cwd().openFile(filepath, .{});
         defer file.close();
 
         const file_size = try file.getEndPos();

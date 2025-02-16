@@ -27,6 +27,11 @@ pub fn deinit(self: *Epub) void {
     if (self.sections) |s| s.deinit();
 }
 
+pub fn addSections(self: *Epub, sections: std.ArrayList(Section)) *Epub {
+    self.sections = sections;
+    return self;
+}
+
 pub fn addSection(self: *Epub, title: []const u8, body: Body) *Epub {
     return self.addSectionType(title, body, Section.ReferenceType.Text);
 }
