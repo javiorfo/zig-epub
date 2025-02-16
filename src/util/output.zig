@@ -6,16 +6,12 @@ const c = @cImport({
     @cInclude("zip.h");
 });
 
-const meta_inf_folder = "META-INF/";
 const oebps_folder = "OEBPS/";
-const mimetype = "mimetype";
 const images_folder = oebps_folder ++ "images/";
-const stylesheet = oebps_folder ++ "stylesheet.css";
-const container = meta_inf_folder ++ "container.xml";
-const content_opf = oebps_folder ++ "content.opf";
-const toc = oebps_folder ++ "toc.ncx";
+const stylesheet_file = oebps_folder ++ "stylesheet.css";
+const content_opf_file = oebps_folder ++ "content.opf";
+const toc_file = oebps_folder ++ "toc.ncx";
 
-const mimetype_content = "application/epub+zip";
 const container_content =
     \\<?xml version="1.0"?>
     \\<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
@@ -26,79 +22,92 @@ const container_content =
 ;
 
 pub fn createEpubFiles(epub: *Epub, epub_path: []const u8) !void {
+    std.log.debug("creating epub {s}, epub: {any}\n", .{ epub_path, epub.* });
+
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const allocator = arena.allocator();
 
     var list = std.ArrayList(u8).init(allocator);
     defer list.deinit();
-    var map = std.StringHashMap([]const u8).init(allocator);
-    defer map.deinit();
 
     var err: c_int = 0;
     const za: ?*c.zip_t = c.zip_open(epub_path.ptr, c.ZIP_CREATE, &err);
     if (za == null) {
         var zip_err: c.zip_error_t = undefined;
         c.zip_error_init_with_code(&zip_err, err);
-        std.debug.print("cannot open zip archive {any}: {any}\n", .{ "err", c.zip_error_strerror(&zip_err) });
+        std.log.err("cannot create epub archive {s}: {any}\n", .{ epub_path, c.zip_error_strerror(&zip_err) });
         c.zip_error_fini(&zip_err);
         return error.EpubFileCreateError;
     }
 
-    // mimetype
-    try addFileToEpub(za.?, mimetype, mimetype_content);
+    try addFileToEpub(za.?, "mimetype", "application/epub+zip");
+    try addFileToEpub(za.?, "META-INF/container.xml", container_content);
 
-    // container.xml
-    try addFileToEpub(za.?, container, container_content);
-
-    // content.opf
+    // content opf
     try createContentOpf(allocator, epub, &list);
     const content_opf_file_content = try list.toOwnedSlice();
-    try addFileToEpub(za.?, content_opf, content_opf_file_content);
+    std.log.debug("content.opf {s}\n", .{content_opf_file_content});
+    try addFileToEpub(za.?, content_opf_file, content_opf_file_content);
 
-    // toc.ncx
+    // toc ncx
     try createToc(allocator, epub, &list);
     const toc_file_content = try list.toOwnedSlice();
-    try addFileToEpub(za.?, toc, toc_file_content);
+    std.log.debug("toc.ncx {s}\n", .{toc_file_content});
+    try addFileToEpub(za.?, toc_file, toc_file_content);
 
     // sections xhtml
+    var map = std.StringHashMap([]const u8).init(allocator);
+    defer map.deinit();
+
     try createSections(allocator, epub, &map);
     var it = map.iterator();
     while (it.next()) |entry| {
-        const ptr = try std.fmt.allocPrintZ(allocator, "{s}", .{entry.key_ptr.*});
-        try addFileToEpub(za.?, ptr, entry.value_ptr.*);
+        const content = entry.value_ptr.*;
+        const xhtml_name = try std.fmt.allocPrintZ(allocator, "{s}", .{entry.key_ptr.*});
+        std.log.debug("section {s}, content: {s}\n", .{ xhtml_name, content });
+        try addFileToEpub(za.?, xhtml_name, content);
     }
 
-    std.log.debug("Generating stylesheet if set: {s}\n", .{stylesheet});
+    // stylesheet
     if (epub.stylesheet) |ss| {
-        const value = try ss.get(allocator);
-        defer if (ss.isFile()) allocator.free(value);
-        try addFileToEpub(za.?, stylesheet, value);
+        const content = try ss.get(allocator);
+        defer if (ss.isFile()) allocator.free(content);
+        std.log.debug("stylesheet {s}, content: {s}\n", .{ stylesheet_file, content });
+        try addFileToEpub(za.?, stylesheet_file, content);
     }
 
-    std.log.debug("Copying cover image if set: {any}\n", .{epub.cover_image});
+    // cover image
     if (epub.cover_image) |cover_image| {
+        std.log.debug("cover image {s}\n", .{cover_image.path});
         try addImageToEpub(allocator, za.?, cover_image.path);
     }
 
-    std.log.debug("Copying images if set: {any}\n", .{epub.cover_image});
+    // images
     if (epub.images) |images| {
-        for (images) |img| try addImageToEpub(allocator, za.?, img);
+        for (images) |img| {
+            std.log.debug("adding image {s}\n", .{img});
+            try addImageToEpub(allocator, za.?, img);
+        }
     }
 
     if (c.zip_close(za) < 0) {
-        std.debug.print("zip_close: {any}\n", .{c.zip_strerror(za).*});
         c.zip_discard(za);
         return error.EpubFileCloseError;
     }
 }
 
-fn addFileToEpub(za: *c.zip_t, filename: [*c]const u8, content: []const u8) !void {
+fn addFileToEpub(za: *c.zip_t, filepath: [*c]const u8, content: []const u8) !void {
     const src = c.zip_source_buffer(za, content.ptr, content.len, 0);
-    if (c.zip_file_add(za, filename, src, c.ZIP_FL_OVERWRITE) < 0) {
-        std.log.err("zip_source_buffer mime: {any}\n", .{c.zip_strerror(za).*});
+    if (c.zip_file_add(za, filepath, src, c.ZIP_FL_OVERWRITE) < 0) {
+        std.log.err("cannot add file {s}: {s}\n", .{ filepath, c.zip_strerror(za) });
         c.zip_source_free(src);
-        _ = c.zip_close(za);
+
+        if (c.zip_close(za) < 0) {
+            c.zip_discard(za);
+            return error.EpubFileCloseError;
+        }
+
         return error.EpubFileContentError;
     }
 }
@@ -113,39 +122,16 @@ fn addImageToEpub(allocator: std.mem.Allocator, za: *c.zip_t, filepath: []const 
 
     const src = c.zip_source_file(za, filepath.ptr, 0, size);
     if (c.zip_file_add(za, epub_image_path.ptr, src, c.ZIP_FL_OVERWRITE) < 0) {
-        std.log.err("zip_source_buffer image: {any}\n", .{c.zip_strerror(za).*});
+        std.debug.print("cannot add image {s}: {s}\n", .{ filepath, c.zip_strerror(za) });
         c.zip_source_free(src);
-        _ = c.zip_close(za);
-        return error.EpubFileContentError;
-    }
-}
 
-fn saveToImageFolder(allocator: std.mem.Allocator, from: []const u8) !void {
-    const cwd = std.fs.cwd();
-    const epub_image_path = try std.mem.concat(allocator, u8, &.{ images_folder, std.fs.path.basename(from) });
-    defer allocator.free(epub_image_path);
-    try cwd.copyFile(from, cwd, epub_image_path, .{});
-}
-
-fn createFileAndWrite(filename: []const u8, content: []const u8) !void {
-    var file = try std.fs.cwd().createFile(filename, .{});
-    defer file.close();
-
-    try file.writeAll(content);
-}
-
-fn createOrOverrideDir(dirname: []const u8) !void {
-    const cwd = std.fs.cwd();
-
-    cwd.makeDir(dirname) catch |err| {
-        if (err == error.PathAlreadyExists) {
-            std.log.debug("Deleting and creating existent dir: {s}\n", .{dirname});
-            try cwd.deleteTree(dirname);
-            try cwd.makeDir(dirname);
-        } else {
-            return err;
+        if (c.zip_close(za) < 0) {
+            c.zip_discard(za);
+            return error.EpubFileCloseError;
         }
-    };
+
+        return error.EpubImageFileError;
+    }
 }
 
 fn createContentOpf(allocator: std.mem.Allocator, epub: *Epub, list: *std.ArrayList(u8)) !void {
