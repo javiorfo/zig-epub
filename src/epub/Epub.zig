@@ -2,7 +2,6 @@ const std = @import("std");
 const Section = @import("Section.zig");
 const Body = @import("../util/body.zig").Body;
 const output = @import("../util/output.zig");
-const Stylesheet = @import("Stylesheet.zig");
 const CoverImage = @import("CoverImage.zig");
 const Metadata = @import("Metadata.zig");
 const testing = std.testing;
@@ -10,7 +9,7 @@ const testing = std.testing;
 allocator: std.mem.Allocator,
 metadata: Metadata,
 sections: ?std.ArrayList(Section) = null,
-stylesheet: ?Stylesheet = null,
+stylesheet: ?Body = null,
 cover: ?Section = null,
 cover_image: ?CoverImage = null,
 images: ?[][]const u8 = null,
@@ -58,7 +57,7 @@ pub fn add(self: *Epub, section: Section) *Epub {
 }
 
 pub fn addStylesheet(self: *Epub, body: Body) *Epub {
-    self.stylesheet = Stylesheet.create(self.allocator, body);
+    self.stylesheet = body;
     return self;
 }
 
@@ -83,9 +82,7 @@ pub fn addCoverImage(self: *Epub, cover_image: CoverImage) *Epub {
 }
 
 pub fn generate(self: *Epub, epub_path: []const u8) !void {
-    // check if name has .epub ext
-    _ = epub_path;
-    try output.createEpubFiles(self);
+    try output.createEpubFiles(self, epub_path);
 }
 
 test "epub" {
@@ -110,14 +107,14 @@ test "epub" {
     defer section.deinit();
 
     try epub
-        .addStylesheet(.{ .raw = "body { background: '#808080' }" })
+        .addStylesheet(.{ .raw = "body { background-color: #808080 }" })
         .addCoverImage(.{ .path = "/home/javier/Downloads/cats.jpg", .image_type = .jpg })
         .addImages(&mock_images_paths)
         .addCover(.{ .raw = "<div class=\"cover\"><img src=\"images/cats.jpg\" alt=\"Cover Image\"/></div>" })
         .addSectionType("Preface", .{ .raw = "<p>preface</p>\n" }, .Preface)
         .add(section.addToc(.{ .text = "Chapter 1.1", .reference_id = "chapter1.1" }).build())
         .addSection("Chapter 2", .{ .raw = "<h1>Chapter 2</h1>\n<p>Bye</p>\n" })
-        .generate("epub_file");
+        .generate("book.epub");
 
     try testing.expect(@TypeOf(epub) == Epub);
 }

@@ -1,5 +1,4 @@
 const std = @import("std");
-const uuid = @import("../util/uuid.zig");
 
 title: []const u8,
 creator: []const u8,
