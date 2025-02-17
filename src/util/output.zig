@@ -21,6 +21,7 @@ const container_content =
     \\</container>
 ;
 
+/// Function wrapper to create epub
 pub fn createEpubFiles(epub: *Epub, epub_path: []const u8) !void {
     std.log.debug("creating epub {s}, epub: {any}\n", .{ epub_path, epub.* });
 
@@ -97,6 +98,7 @@ pub fn createEpubFiles(epub: *Epub, epub_path: []const u8) !void {
     }
 }
 
+/// Adds a file to the epub using libzip
 fn addFileToEpub(za: *c.zip_t, filepath: [*c]const u8, content: []const u8) !void {
     const src = c.zip_source_buffer(za, content.ptr, content.len, 0);
     if (c.zip_file_add(za, filepath, src, c.ZIP_FL_OVERWRITE) < 0) {
@@ -112,6 +114,7 @@ fn addFileToEpub(za: *c.zip_t, filepath: [*c]const u8, content: []const u8) !voi
     }
 }
 
+/// Adds an image to the epub using libzip
 fn addImageToEpub(allocator: std.mem.Allocator, za: *c.zip_t, filepath: []const u8) !void {
     var file = try std.fs.cwd().openFile(filepath, .{});
     defer file.close();
@@ -134,6 +137,7 @@ fn addImageToEpub(allocator: std.mem.Allocator, za: *c.zip_t, filepath: []const 
     }
 }
 
+/// Creates content.opf and store it in an ArrayList
 fn createContentOpf(allocator: std.mem.Allocator, epub: *Epub, list: *std.ArrayList(u8)) !void {
     try list.appendSlice(xhtml.content_opf_package_metadata);
 
@@ -235,6 +239,7 @@ fn createContentOpf(allocator: std.mem.Allocator, epub: *Epub, list: *std.ArrayL
     try list.appendSlice(xhtml.content_opf_guide_package);
 }
 
+/// Creates sections and store them in an StringHashMap
 fn createSections(allocator: std.mem.Allocator, epub: *Epub, map: *std.StringHashMap([]const u8)) !void {
     const add_stylesheet = if (epub.stylesheet) |_| true else false;
 
@@ -249,6 +254,7 @@ fn createSections(allocator: std.mem.Allocator, epub: *Epub, map: *std.StringHas
     }
 }
 
+/// Creates a sections file and store it in an StringHashMap. Key => filename, Value => content
 fn createSectionFile(allocator: std.mem.Allocator, section: Section, map: *std.StringHashMap([]const u8), add_stylesheet: bool, is_cover: bool) !void {
     var list = std.ArrayList(u8).init(std.heap.page_allocator);
     defer list.deinit();
@@ -273,6 +279,7 @@ fn createSectionFile(allocator: std.mem.Allocator, section: Section, map: *std.S
     try map.put(dest, try list.toOwnedSlice());
 }
 
+/// Creates toc.ncx and store it in an ArrayList
 fn createToc(allocator: std.mem.Allocator, epub: *Epub, list: *std.ArrayList(u8)) !void {
     try list.appendSlice(xhtml.toc_open_tag);
 

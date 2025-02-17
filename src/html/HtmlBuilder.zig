@@ -2,31 +2,34 @@ const std = @import("std");
 const testing = std.testing;
 
 allocator: std.mem.Allocator,
-list: std.ArrayList(u8),
+list: std.ArrayList([]const u8),
 
 const HtmlBuilder = @This();
 
 pub fn init(allocator: std.mem.Allocator) HtmlBuilder {
     return .{
         .allocator = allocator,
-        .list = std.ArrayList(u8).init(allocator),
+        .list = std.ArrayList([]const u8).init(allocator),
     };
 }
 
 pub fn deinit(self: *HtmlBuilder) void {
     defer self.list.deinit();
+    for (self.list.items) |item| {
+        self.allocator.free(item);
+    }
 }
 
 pub fn add(self: *HtmlBuilder, properties: Properties, htmlTag: HtmlTag) *HtmlBuilder {
     const enclosed = htmlTag.enclose(self.allocator, properties) catch "error";
-    self.list.appendSlice(enclosed) catch |err| {
+    self.list.append(enclosed) catch |err| {
         std.log.err("Error appending HTML enclosed {}", .{err});
     };
     return self;
 }
 
 pub fn build(self: *HtmlBuilder) ![]const u8 {
-    return try self.list.toOwnedSlice();
+    return try std.mem.join(self.allocator, "", try self.list.toOwnedSlice());
 }
 
 const Properties = struct {

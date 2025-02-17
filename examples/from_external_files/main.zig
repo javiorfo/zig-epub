@@ -17,9 +17,9 @@ pub fn main() !void {
     defer my_epub.deinit();
 
     try my_epub
-        .addStylesheet(.{ .filepath = "style.css" })
-        .addCoverImage(.{ .path = "/home/user/Downloads/cats.jpg", .image_type = .jpg })
-        .addCover(.{ .filepath = "cover.xml" })
+        .setStylesheet(.{ .filepath = "style.css" })
+        .setCoverImage(.{ .path = "/home/user/Downloads/cats.jpg", .image_type = .jpg })
+        .setCover(.{ .filepath = "cover.xml" })
         .addSectionType("Preface", .{ .filepath = "preface.xml" }, .Preface)
         .addSection("Chapter 1", .{ .filepath = "chapter1.xml" })
         .generate("book.epub");

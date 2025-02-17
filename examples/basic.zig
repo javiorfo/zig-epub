@@ -25,10 +25,10 @@ pub fn main() !void {
     defer section.deinit();
 
     try my_epub
-        .addStylesheet(.{ .raw = "body { background-color: #000000 }" })
-        .addCoverImage(.{ .path = "/home/user/Downloads/cats.jpg", .image_type = .jpg })
-        .addImages(&image_paths)
-        .addCover(.{ .raw = "<div class=\"cover\"><img src=\"images/cats.jpg\" alt=\"Cover Image\"/></div>" })
+        .setStylesheet(.{ .raw = "body { background-color: #000000 }" })
+        .setCoverImage(.{ .path = "/home/user/Downloads/cats.jpg", .image_type = .jpg })
+        .setImages(&image_paths)
+        .setCover(.{ .raw = "<div class=\"cover\"><img src=\"images/cats.jpg\" alt=\"Cover Image\"/></div>" })
         .addSectionType("Preface", .{ .raw = "<p>preface</p>\n" }, .Preface)
         .add(section.addToc(.{ .text = "Chapter 1.1", .reference_id = "chapter1.1" }).build())
         .addSection("Chapter 2", .{ .raw = "<h1>Chapter 2</h1>\n<p>Bye</p>\n" })
