@@ -128,22 +128,21 @@ test "epub" {
     defer epub.deinit();
 
     var mock_images_paths = [_][]const u8{
-        "/home/javier/Downloads/cats.jpg",
-        "/home/javier/Downloads/cats.jpg",
+        "cats.jpg",
+        "cats2.jpg",
     };
 
     var section = Section.init(allocator, "Chapter 1", .{ .raw = "<h1>Chapter 1</h1>\n<p>Hello</p>\n<h1 id=\"chapter1.1\">Chapter 1.1</h1>" });
     defer section.deinit();
 
-    try epub
+    _ = epub
         .setStylesheet(.{ .raw = "body { background-color: #808080 }" })
-        .setCoverImage(.{ .path = "/home/javier/Downloads/cats.jpg", .image_type = .jpg })
+        .setCoverImage(.{ .path = "cats.png", .image_type = .png })
         .setImages(&mock_images_paths)
-        .setCover(.{ .raw = "<div class=\"cover\"><img src=\"images/cats.jpg\" alt=\"Cover Image\"/></div>" })
+        .setCover(.{ .raw = "<div class=\"cover\"><img src=\"images/cats.png\" alt=\"Cover Image\"/></div>" })
         .addSectionType("Preface", .{ .raw = "<p>preface</p>\n" }, .Preface)
         .add(section.addToc(.{ .text = "Chapter 1.1", .reference_id = "chapter1.1" }).build())
-        .addSection("Chapter 2", .{ .raw = "<h1>Chapter 2</h1>\n<p>Bye</p>\n" })
-        .generate("book.epub");
+        .addSection("Chapter 2", .{ .raw = "<h1>Chapter 2</h1>\n<p>Bye</p>\n" });
 
     try testing.expect(@TypeOf(epub) == Epub);
 }

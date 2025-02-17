@@ -23,8 +23,6 @@ const container_content =
 
 /// Function wrapper to create epub
 pub fn createEpubFiles(epub: *Epub, epub_path: []const u8) !void {
-    std.log.debug("creating epub {s}, epub: {any}\n", .{ epub_path, epub.* });
-
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const allocator = arena.allocator();
@@ -37,7 +35,7 @@ pub fn createEpubFiles(epub: *Epub, epub_path: []const u8) !void {
     if (za == null) {
         var zip_err: c.zip_error_t = undefined;
         c.zip_error_init_with_code(&zip_err, err);
-        std.log.err("cannot create epub archive {s}: {any}\n", .{ epub_path, c.zip_error_strerror(&zip_err) });
+        std.log.debug("cannot create epub archive {s}: {any}\n", .{ epub_path, c.zip_error_strerror(&zip_err) });
         c.zip_error_fini(&zip_err);
         return error.EpubFileCreateError;
     }
@@ -48,13 +46,11 @@ pub fn createEpubFiles(epub: *Epub, epub_path: []const u8) !void {
     // content opf
     try createContentOpf(allocator, epub, &list);
     const content_opf_file_content = try list.toOwnedSlice();
-    std.log.debug("content.opf {s}\n", .{content_opf_file_content});
     try addFileToEpub(za.?, content_opf_file, content_opf_file_content);
 
     // toc ncx
     try createToc(allocator, epub, &list);
     const toc_file_content = try list.toOwnedSlice();
-    std.log.debug("toc.ncx {s}\n", .{toc_file_content});
     try addFileToEpub(za.?, toc_file, toc_file_content);
 
     // sections xhtml
@@ -66,7 +62,6 @@ pub fn createEpubFiles(epub: *Epub, epub_path: []const u8) !void {
     while (it.next()) |entry| {
         const content = entry.value_ptr.*;
         const xhtml_name = try std.fmt.allocPrintZ(allocator, "{s}", .{entry.key_ptr.*});
-        std.log.debug("section {s}, content: {s}\n", .{ xhtml_name, content });
         try addFileToEpub(za.?, xhtml_name, content);
     }
 
@@ -74,23 +69,14 @@ pub fn createEpubFiles(epub: *Epub, epub_path: []const u8) !void {
     if (epub.stylesheet) |ss| {
         const content = try ss.get(allocator);
         defer if (ss.isFile()) allocator.free(content);
-        std.log.debug("stylesheet {s}, content: {s}\n", .{ stylesheet_file, content });
         try addFileToEpub(za.?, stylesheet_file, content);
     }
 
     // cover image
-    if (epub.cover_image) |cover_image| {
-        std.log.debug("cover image {s}\n", .{cover_image.path});
-        try addImageToEpub(allocator, za.?, cover_image.path);
-    }
+    if (epub.cover_image) |cover_image| try addImageToEpub(allocator, za.?, cover_image.path);
 
     // images
-    if (epub.images) |images| {
-        for (images) |img| {
-            std.log.debug("adding image {s}\n", .{img});
-            try addImageToEpub(allocator, za.?, img);
-        }
-    }
+    if (epub.images) |images| for (images) |img| try addImageToEpub(allocator, za.?, img);
 
     if (c.zip_close(za) < 0) {
         c.zip_discard(za);
@@ -102,7 +88,7 @@ pub fn createEpubFiles(epub: *Epub, epub_path: []const u8) !void {
 fn addFileToEpub(za: *c.zip_t, filepath: [*c]const u8, content: []const u8) !void {
     const src = c.zip_source_buffer(za, content.ptr, content.len, 0);
     if (c.zip_file_add(za, filepath, src, c.ZIP_FL_OVERWRITE) < 0) {
-        std.log.err("cannot add file {s}: {s}\n", .{ filepath, c.zip_strerror(za) });
+        std.log.debug("cannot add file {s}: {s}\n", .{ filepath, c.zip_strerror(za) });
         c.zip_source_free(src);
 
         if (c.zip_close(za) < 0) {
@@ -125,7 +111,7 @@ fn addImageToEpub(allocator: std.mem.Allocator, za: *c.zip_t, filepath: []const 
 
     const src = c.zip_source_file(za, filepath.ptr, 0, size);
     if (c.zip_file_add(za, epub_image_path.ptr, src, c.ZIP_FL_OVERWRITE) < 0) {
-        std.debug.print("cannot add image {s}: {s}\n", .{ filepath, c.zip_strerror(za) });
+        std.log.debug("cannot add image {s}: {s}\n", .{ filepath, c.zip_strerror(za) });
         c.zip_source_free(src);
 
         if (c.zip_close(za) < 0) {
