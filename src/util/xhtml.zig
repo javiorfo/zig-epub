@@ -133,7 +133,7 @@ pub const items_xhtml_stylesheet =
 
 pub const items_xhtml_open_body =
     \\</head>
-    \\<body>
+    \\<body id="{s}-body">
     \\
 ;
 

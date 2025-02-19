@@ -258,7 +258,8 @@ fn createSectionFile(allocator: std.mem.Allocator, section: Section, map: *std.S
 
     if (add_stylesheet) try list.appendSlice(xhtml.items_xhtml_stylesheet);
 
-    try list.appendSlice(xhtml.items_xhtml_open_body);
+    const body = try std.fmt.allocPrint(allocator, xhtml.items_xhtml_open_body, .{filename});
+    try list.appendSlice(body);
     try list.appendSlice(value);
     try list.appendSlice(xhtml.items_xhtml_close_body);
 
