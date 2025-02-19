@@ -8,18 +8,18 @@
 - This library has been developed on and for `Linux` following open source philosophy.
 
 ## Overview
-This library will generate an epub with the current compressed files:
+This library will generate an epub with the following compressed files:
 - **META-INF/**
     - **container.xml**
 - **OEBPS/**
     - **images/**
+        - **some_image.png**
     - **toc.ncx**
     - **content.opf**
     - **SomeChapter.xhtml**
     - **stylesheet.css**
 - **mimetype**
 
-**NOTE:** Only one level of subchapter is available when using Table of Contents at the moment. Ex: Chapter 1 -> Chapter 1.1, Chapter 1.2, etc.
 
 ## Usage
 - Simple example. More [examples here](https://github.com/javiorfo/zig-epub/tree/master/examples)
@@ -58,9 +58,15 @@ pub fn main() !void {
         .addSectionType("Preface", .{ .raw = "<p>preface</p>\n" }, .Preface)
         .add(section.addToc(.{ .text = "Chapter 1.1", .reference_id = "chapter1.1" }).build())
         .addSection("Chapter 2", .{ .raw = "<h1>Chapter 2</h1>\n<p>Bye</p>\n" })
-        .generate("book.epub");
+        .generate("book.epub"); // This could be a existent path to some folder (absolute or relative). Ex: "/path/to/book.epub"
 }
 ```
+
+## Some info
+- Only one level of subsection is available when using Table of Contents at the moment. Ex: Chapter 1 -> Chapter 1.1, Chapter 1.2, etc.
+- An Epub is just a compressed file. Using a tool like `unzip` or similar could be useful to see the content and files generated.
+- Every **xhtml** (cover and sections) will have the **<body>** tag with an id formed by the name of the section without spaces plus **-body**. Helpful when using some **css** on it.
+    - Ex: Section named "Chapter 1" will have `<body id="Chapter1-body">`
 
 ## Installation
 #### In `build.zig.zon`:
