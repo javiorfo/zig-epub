@@ -248,8 +248,8 @@ fn createSectionFile(allocator: std.mem.Allocator, section: Section, map: *std.S
     const value = try section.body.get(allocator);
 
     const filename = try std.mem.replaceOwned(u8, allocator, section.title, " ", "");
-
-    const dest = try std.mem.concat(allocator, u8, &.{ oebps_folder, if (is_cover) "cover" else filename, ".xhtml" });
+    const name = if (is_cover) "cover" else filename;
+    const dest = try std.mem.concat(allocator, u8, &.{ oebps_folder, name, ".xhtml" });
 
     try list.appendSlice(xhtml.items_xhtml_open_tag);
 
@@ -258,7 +258,7 @@ fn createSectionFile(allocator: std.mem.Allocator, section: Section, map: *std.S
 
     if (add_stylesheet) try list.appendSlice(xhtml.items_xhtml_stylesheet);
 
-    const body = try std.fmt.allocPrint(allocator, xhtml.items_xhtml_open_body, .{filename});
+    const body = try std.fmt.allocPrint(allocator, xhtml.items_xhtml_open_body, .{name});
     try list.appendSlice(body);
     try list.appendSlice(value);
     try list.appendSlice(xhtml.items_xhtml_close_body);
