@@ -2,8 +2,8 @@
 *Minimal Zig library for creating EPUB files*
 
 ## Caveats
-- C libs dependencies: [libzip 1.11.2](https://github.com/nih-at/libzip) 
-- Required Zig version: **0.13**
+- C libs dependencies: [libzip 1.11](https://github.com/nih-at/libzip) 
+- Required Zig version: **0.14.1**
 - Epub version: `2.0.1`
 - This library has been developed on and for `Linux` following open source philosophy.
 
